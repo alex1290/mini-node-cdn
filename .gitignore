@@ -1,0 +1,9 @@
+.agents
+.claude
+skills-lock.json
+node_modules/
+cache/*
+!cache/.gitkeep
+.env
+settings.json
+docker/*
