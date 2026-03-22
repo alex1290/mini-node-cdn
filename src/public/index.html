@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CDN Dashboard</title>
+  <link rel="stylesheet" href="/public/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Mini CDN Dashboard</h1>
+    <span id="last-updated"></span>
+  </header>
+
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">快取檔案數</div>
+      <div class="stat-value" id="total-files">—</div>
+    </div>
+    <div class="stat-card hit">
+      <div class="stat-label">命中次數 (HIT)</div>
+      <div class="stat-value" id="hit-count">—</div>
+    </div>
+    <div class="stat-card miss">
+      <div class="stat-label">缺失次數 (MISS)</div>
+      <div class="stat-value" id="miss-count">—</div>
+    </div>
+    <div class="stat-card rate">
+      <div class="stat-label">命中率</div>
+      <div class="stat-value" id="hit-rate">—</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>快取列表</h2>
+      <button id="clear-btn" class="btn btn-danger">清除所有快取</button>
+    </div>
+    <div class="table-wrap">
+      <table id="cache-table">
+        <thead>
+          <tr>
+            <th>原始路徑</th>
+            <th>Content-Type</th>
+            <th>大小</th>
+            <th>剩餘 TTL</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="cache-body">
+          <tr><td colspan="5" class="empty">載入中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>設定</h2>
+    <form id="settings-form">
+      <div class="form-row">
+        <label for="defaultTtl">預設 TTL（秒）</label>
+        <input type="number" id="defaultTtl" name="defaultTtl" min="1" placeholder="120" />
+      </div>
+      <div class="form-row">
+        <label for="allowedExtensions">
+          允許緩存的副檔名
+          <span class="hint">逗號分隔，留空表示全部允許。例：jpg,png,css,js</span>
+        </label>
+        <input type="text" id="allowedExtensions" name="allowedExtensions" placeholder="jpg,png,css,js（留空=全部）" />
+      </div>
+      <div class="form-row">
+        <label for="pathRules">
+          路徑規則（JSON 陣列）
+          <span class="hint">例：[{"path":"/images/","ttl":3600,"cache":true}]</span>
+        </label>
+        <textarea id="pathRules" name="pathRules" rows="4" placeholder='[{"path":"/images/","ttl":3600,"cache":true}]'></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">儲存設定</button>
+        <span id="settings-msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <script src="/public/app.js"></script>
+</body>
+</html>
