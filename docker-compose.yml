@@ -1,0 +1,62 @@
+services:
+  cdn:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ORIGIN_URL: ${ORIGIN_URL:-http://origin:80}
+      DEFAULT_TTL: ${DEFAULT_TTL:-120}
+      REDIS_URL: redis://redis:6379
+      SETTINGS_FILE: /app/settings.json
+    volumes:
+      # Persist cache across container restarts with correct permissions
+      - ./cache:/app/cache
+      # Persist settings across container restarts
+      - ./settings.json:/app/settings.json
+    # Make the container filesystem read-only — only the two volume mounts above are writable
+    read_only: true
+    # For Node.js to write to /tmp if needed (e.g. for temp files during processing)
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+    networks:
+      - cdn-net
+    depends_on:
+      origin:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # Mock origin server for development/testing
+  origin:
+    image: nginx:alpine
+    volumes:
+      - ./docker/origin-files:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    networks:
+      - cdn-net
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    networks:
+      - cdn-net
+
+networks:
+  cdn-net:
+    driver: bridge
+
+volumes:
+  redis-data:
