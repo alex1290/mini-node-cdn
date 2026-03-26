@@ -9,13 +9,14 @@
 | 代理快取 | GET 請求自動代理並快取到本地 `cache/` |
 | TTL 過期機制 | 快取檔案超過設定秒數後視為過期，重新從源頭抓取 |
 | `X-Cache` 標頭 | 每個回應標示 `HIT` 或 `MISS` |
-| Stats API | `/api/stats` 提供命中/缺失計數、快取檔案數（記憶體暫存，重啟歸零） |
+| Stats API | `/api/stats` 提供命中/缺失計數、快取檔案數、Redis 連線狀態 |
 | 快取管理 API | 列出、清除所有或單一快取項目 |
 | 設定 API | 動態調整 TTL、允許的副檔名、路徑規則 |
 | Dashboard UI | `/dashboard` 即時監控面板（Polling + Vanilla JS） |
 | 原子化寫入 | Write-then-Rename 確保檔案寫入不損壞 |
 | 並行安全 | In-flight Deduplication 避免相同資源重複抓取 |
 | Redis 持久化 | RDB 快照 + named volume，重啟不遺失快取 metadata |
+| Redis 離線降級 | Redis 斷線時自動降級為直接代理模式，不中斷服務；定時檢測並自動重連 |
 | Docker 部署 | Dockerfile + docker-compose.yml |
 
 ## 快速啟動
@@ -67,6 +68,7 @@ npm run dev
 | `DEFAULT_TTL` | `120` | 預設快取有效秒數 |
 | `CACHE_DIR` | `./cache` | 快取檔案存放路徑 |
 | `REDIS_URL` | `redis://localhost:6379` | Redis 連線 URL |
+| `REDIS_RETRY_INTERVAL` | `60` | Redis 斷線後重連檢測間隔（秒） |
 | `SETTINGS_FILE` | `./settings.json` | 動態設定檔路徑 |
 | `NODE_ENV` | `development` | 執行環境（`development` 關閉靜態資源快取） |
 
@@ -144,7 +146,7 @@ curl -I http://localhost:3000/index.html
 
 # 3. 查看統計
 curl http://localhost:3000/api/stats
-# {"total_files":1,"hit_count":1,"miss_count":1}
+# {"total_files":1,"hit_count":1,"miss_count":1,"redis_connected":true}
 
 # 4. 清除所有快取
 curl -X DELETE http://localhost:3000/api/cache
@@ -192,6 +194,9 @@ cdnServer/
 
 **一致性（Redis ↔ 磁碟雙向同步）**  
 原子化寫入，再 `redis.hset()` 寫入 metadata。若伺服器在兩步之間崩潰，磁碟上會殘留 Redis 查不到的孤立檔案。啟動時 `init()` 執行雙向同步：刪除 Redis 有但磁碟無的 key，同時刪除磁碟有但 Redis 無的孤立檔案，確保兩端一致。Redis 以 source of truth 為準。
+
+**Redis 離線降級**  
+Redis 斷線不會阻止伺服器啟動或中斷服務。所有快取操作透過 `#isRedisReady` 狀態旗標自動降級：`get()` 回傳 MISS、`set()` 跳過寫入（避免產生無 metadata 的孤立檔案）、`list()` 回傳空陣列、`totalFiles()` 退回用 `fs.readdir()` 計算磁碟檔案數。斷線後每隔 `REDIS_RETRY_INTERVAL` 秒（預設 60）檢測 Redis 狀態，ioredis 自動重連成功後立即執行 reconciliation 對齊磁碟與 Redis，恢復完整快取功能。
 
 **效能平衡**  
 過期清理採懶惰策略（lazy expiration）——僅在資源被再次請求時才判定過期並刪除，冷門資源即使已過期仍永久佔用磁碟空間，無背景回收機制，應該新增一個機制固定刪除冷門資源，但有dashboard供使用者自行刪除，所以此機制優先級不高，除非磁碟爆滿。

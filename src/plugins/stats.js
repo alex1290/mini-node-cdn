@@ -16,6 +16,7 @@ async function statsPlugin(fastify) {
         total_files: await fastify.cache.totalFiles(),
         hit_count: hitCount,
         miss_count: missCount,
+        redis_connected: fastify.cache.isRedisConnected,
       }
     },
   })
