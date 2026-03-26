@@ -23,11 +23,13 @@ class CacheManager {
   #isRedisReady = false
   #retryTimer = null
   #retryIntervalMs
+  #connectTimeoutMs
   #reconciling = false
 
-  constructor(cacheDir, redisUrl, retryIntervalSec, log) {
+  constructor(cacheDir, redisUrl, retryIntervalSec, connectTimeoutSec, log) {
     this.#cacheDir = cacheDir
     this.#retryIntervalMs = retryIntervalSec * 1000
+    this.#connectTimeoutMs = connectTimeoutSec * 1000
     this.#log = log
 
     this.#redis = new Redis(redisUrl, {
@@ -145,8 +147,8 @@ class CacheManager {
       try {
         await new Promise((resolve, reject) => {
           const timer = setTimeout(() => {
-            reject(new Error('Redis connection timed out after 10 s'))
-          }, 10_000)
+            reject(new Error(`Redis connection timed out after ${this.#connectTimeoutMs / 1000} s`))
+          }, this.#connectTimeoutMs)
           this.#redis.once('ready', () => { clearTimeout(timer); resolve() })
         })
       } catch (err) {
@@ -372,7 +374,8 @@ async function cacheManagerPlugin(fastify) {
   const cacheDir = fastify.config.CACHE_DIR
   const redisUrl = fastify.config.REDIS_URL
   const retryInterval = fastify.config.REDIS_RETRY_INTERVAL
-  const manager = new CacheManager(cacheDir, redisUrl, retryInterval, fastify.log)
+  const connectTimeout = fastify.config.REDIS_CONNECT_TIMEOUT
+  const manager = new CacheManager(cacheDir, redisUrl, retryInterval, connectTimeout, fastify.log)
   await manager.init()
   fastify.decorate('cache', manager)
   fastify.log.info(`Cache manager initialized — dir: ${cacheDir}, redis: ${redisUrl}`)

@@ -69,6 +69,7 @@ npm run dev
 | `CACHE_DIR` | `./cache` | 快取檔案存放路徑 |
 | `REDIS_URL` | `redis://localhost:6379` | Redis 連線 URL |
 | `REDIS_RETRY_INTERVAL` | `60` | Redis 斷線後重連檢測間隔（秒） |
+| `REDIS_CONNECT_TIMEOUT` | `10` | Redis 啟動連線逾時（秒） |
 | `SETTINGS_FILE` | `./settings.json` | 動態設定檔路徑 |
 | `NODE_ENV` | `development` | 執行環境（`development` 關閉靜態資源快取） |
 

@@ -92,3 +92,55 @@ export async function createTestContext() {
 
   return { server, origin, cacheDir, cleanup }
 }
+
+/**
+ * Create a CDN server with Redis intentionally unreachable.
+ * Used to test degraded-mode behaviour when Redis is offline.
+ */
+export async function createNoRedisTestContext() {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cdn-test-nored-'))
+
+  // --- Mock Origin Server (reuse same endpoints) ---
+  const origin = Fastify({ logger: false })
+
+  origin.get('/hello.txt', async (req, reply) => {
+    return reply.type('text/plain').send('Hello from origin!')
+  })
+
+  origin.get('/image.jpg', async (req, reply) => {
+    return reply.type('image/jpeg').send(Buffer.alloc(10, 0xff))
+  })
+
+  origin.get('/not-found', async (req, reply) => {
+    reply.status(404)
+    return { error: 'not found' }
+  })
+
+  origin.get('/server-error', async (req, reply) => {
+    reply.status(500)
+    return { error: 'internal server error' }
+  })
+
+  await origin.listen({ port: 0, host: '127.0.0.1' })
+  const originPort = origin.server.address().port
+  const originUrl = `http://127.0.0.1:${originPort}`
+
+  // Point Redis at an unreachable port so it never connects
+  process.env.ORIGIN_URL = originUrl
+  process.env.CACHE_DIR  = cacheDir
+  process.env.REDIS_URL  = 'redis://localhost:1'
+  process.env.REDIS_CONNECT_TIMEOUT = '1'
+  process.env.REDIS_RETRY_INTERVAL  = '9999'
+  process.env.NODE_ENV   = 'test'
+
+  const server = buildServer({ logger: false })
+  await server.ready()
+
+  async function cleanup() {
+    await server.close()
+    await origin.close()
+    await fs.rm(cacheDir, { recursive: true, force: true })
+  }
+
+  return { server, origin, cacheDir, cleanup }
+}
