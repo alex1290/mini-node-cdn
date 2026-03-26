@@ -24,7 +24,7 @@ async function refreshStats() {
   try {
     const res = await fetch('/api/stats')
     if (!res.ok) return
-    const { total_files, hit_count, miss_count } = await res.json()
+    const { total_files, hit_count, miss_count, redis_connected } = await res.json()
     $('total-files').textContent = total_files
     $('hit-count').textContent   = hit_count
     $('miss-count').textContent  = miss_count
@@ -33,6 +33,20 @@ async function refreshStats() {
       ? `${((hit_count / total) * 100).toFixed(1)}%`
       : '—'
     $('last-updated').textContent = `最後更新：${new Date().toLocaleTimeString()}`
+
+    // Update Redis connection status
+    redisConnected = redis_connected
+    const badge = $('redis-status')
+    const banner = $('redis-banner')
+    if (redis_connected) {
+      badge.textContent = 'Redis: 已連線'
+      badge.className = 'redis-badge online'
+      banner.hidden = true
+    } else {
+      badge.textContent = 'Redis: 離線'
+      badge.className = 'redis-badge offline'
+      banner.hidden = false
+    }
   } catch {/* silent */}
 }
 
@@ -45,7 +59,9 @@ async function refreshCacheList() {
     const tbody = $('cache-body')
 
     if (entries.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">目前無快取</td></tr>'
+      tbody.innerHTML = redisConnected
+        ? '<tr><td colspan="5" class="empty">目前無快取</td></tr>'
+        : '<tr><td colspan="5" class="empty empty-warn">Redis 離線，無法顯示快取列表</td></tr>'
       return
     }
 

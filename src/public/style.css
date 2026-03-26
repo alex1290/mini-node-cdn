@@ -37,6 +37,49 @@ header {
 header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
 #last-updated { font-size: 12px; color: var(--text-muted); }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Redis status badge */
+.redis-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.redis-badge.online {
+  background: color-mix(in srgb, var(--hit) 18%, transparent);
+  color: var(--hit);
+}
+.redis-badge.offline {
+  background: color-mix(in srgb, var(--miss) 18%, transparent);
+  color: var(--miss);
+  animation: pulse-offline 2s ease-in-out infinite;
+}
+@keyframes pulse-offline {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+
+/* Degraded-mode banner */
+.banner {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+.banner-warn {
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -105,6 +148,7 @@ tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: rgba(255,255,255,.03); }
 tbody td { padding: 10px 12px; color: var(--text); }
 tbody td.empty { text-align: center; color: var(--text-muted); padding: 32px; }
+tbody td.empty-warn { text-align: center; color: var(--warn); padding: 32px; }
 
 .ttl-badge {
   display: inline-block;
