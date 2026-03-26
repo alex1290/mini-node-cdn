@@ -181,4 +181,31 @@ describe('Proxy — pathRules, errors, and edge cases', () => {
     const res = await server.inject({ method: 'GET', url: '/favicon.ico' })
     assert.equal(res.statusCode, 204)
   })
+
+  it('URLs that differ only by slash vs double-dash are cached independently', async () => {
+    await server.inject({ method: 'DELETE', url: '/api/cache' })
+
+    const res1 = await server.inject({ method: 'GET', url: '/assets/js/app.js' })
+    assert.equal(res1.statusCode, 200)
+    assert.equal(res1.body, '// from /assets/js/app.js')
+
+    const res2 = await server.inject({ method: 'GET', url: '/assets/js--app.js' })
+    assert.equal(res2.statusCode, 200)
+    assert.equal(res2.body, '// from /assets/js--app.js')
+
+    // Both should now be cached independently
+    const hit1 = await server.inject({ method: 'GET', url: '/assets/js/app.js' })
+    assert.equal(hit1.headers['x-cache'], 'HIT')
+    assert.equal(hit1.body, '// from /assets/js/app.js')
+
+    const hit2 = await server.inject({ method: 'GET', url: '/assets/js--app.js' })
+    assert.equal(hit2.headers['x-cache'], 'HIT')
+    assert.equal(hit2.body, '// from /assets/js--app.js')
+
+    // Verify they have different cache keys
+    const list = await server.inject({ method: 'GET', url: '/api/cache' })
+    const entries = list.json()
+    const keys = entries.map(e => e.key)
+    assert.equal(new Set(keys).size, keys.length, 'all cache keys should be unique')
+  })
 })
