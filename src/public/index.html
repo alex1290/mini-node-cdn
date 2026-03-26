@@ -9,8 +9,15 @@
 <body>
   <header>
     <h1>Mini CDN Dashboard</h1>
-    <span id="last-updated"></span>
+    <div class="header-right">
+      <span id="redis-status" class="redis-badge offline">Redis: —</span>
+      <span id="last-updated"></span>
+    </div>
   </header>
+
+  <div id="redis-banner" class="banner banner-warn" hidden>
+    ⚠ Redis 連線中斷 — 目前為降級模式，快取功能暫停，所有請求直接代理至源頭伺服器。
+  </div>
 
   <section class="stats-grid">
     <div class="stat-card">
