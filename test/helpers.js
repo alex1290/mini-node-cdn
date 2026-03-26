@@ -58,6 +58,15 @@ export async function createTestContext() {
     return reply.type('text/plain').send('nested file')
   })
 
+  // Endpoints for cache key collision regression test
+  origin.get('/assets/js/app.js', async (req, reply) => {
+    return reply.type('application/javascript').send('// from /assets/js/app.js')
+  })
+
+  origin.get('/assets/js--app.js', async (req, reply) => {
+    return reply.type('application/javascript').send('// from /assets/js--app.js')
+  })
+
   origin.get('/encoded%20file.txt', async (req, reply) => {
     return reply.type('text/plain').send('encoded')
   })

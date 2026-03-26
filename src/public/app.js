@@ -56,7 +56,7 @@ async function refreshCacheList() {
         <td>${formatBytes(e.size)}</td>
         <td>${ttlBadge(e.remainingTtl)}</td>
         <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteEntry('${escHtml(e.key)}')">
+          <button class="btn btn-danger btn-sm" onclick="deleteEntry('${escHtml(e.key)}', '${escHtml(e.originalPath)}')">
             刪除
           </button>
         </td>
@@ -74,8 +74,8 @@ function escHtml(str) {
 }
 
 // ── Delete single entry ───────────────────────────────────────────────────────
-async function deleteEntry(key) {
-  if (!confirm(`確定刪除快取 "${key}"？`)) return
+async function deleteEntry(key, originalPath) {
+  if (!confirm(`確定刪除快取 "${originalPath || key}"？`)) return
   try {
     await fetch(`/api/cache/${encodeURIComponent(key)}`, { method: 'DELETE' })
     await Promise.all([refreshStats(), refreshCacheList()])
