@@ -1,16 +1,18 @@
 import fp from 'fastify-plugin'
 import path from 'node:path'
 import fs from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import Redis from 'ioredis'
 
 const KEY_PREFIX = 'cache:meta:'
 
-// Sanitize a URL path into a safe filename key
-// e.g. /images/photo.jpg → images--photo.jpg
+// Hash a URL path into a fixed-length, collision-free cache key
+// e.g. /images/photo.jpg → 32-char MD5 hex digest
 function pathToKey(urlPath) {
   // Normalize to collapse ../ sequences, then strip any remaining leading ../
   const normalized = path.posix.normalize(urlPath).replace(/^(\.\.\/)+/, '')
-  return normalized.replace(/^\/+/, '').replace(/[/\\?#%]/g, '--') || 'index'
+  const clean = normalized.replace(/^\/+/, '')
+  return createHash('md5').update(clean).digest('hex')
 }
 
 class CacheManager {
