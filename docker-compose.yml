@@ -29,6 +29,22 @@ services:
       redis:
         condition: service_healthy
 
+  # Dashboard UI (separate from CDN to avoid path conflicts)
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8081:80"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /run
+    restart: unless-stopped
+    networks:
+      - cdn-net
+    depends_on:
+      - cdn
+
   # Mock origin server for development/testing
   origin:
     image: nginx:alpine
