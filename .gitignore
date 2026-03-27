@@ -2,8 +2,8 @@
 .claude
 skills-lock.json
 node_modules/
-cache/*
-!cache/.gitkeep
+backend/cache/*
+!backend/cache/.gitkeep
 .env
 settings.json
 docker/*

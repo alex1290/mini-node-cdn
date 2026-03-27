@@ -1,6 +1,6 @@
 services:
   cdn:
-    build: .
+    build: ./backend
     ports:
       - "3000:3000"
     environment:
@@ -12,9 +12,9 @@ services:
       SETTINGS_FILE: /app/settings.json
     volumes:
       # Persist cache across container restarts with correct permissions
-      - ./cache:/app/cache
+      - ./backend/cache:/app/cache
       # Persist settings across container restarts
-      - ./settings.json:/app/settings.json
+      - ./backend/settings.json:/app/settings.json
     # Make the container filesystem read-only — only the two volume mounts above are writable
     read_only: true
     # For Node.js to write to /tmp if needed (e.g. for temp files during processing)
@@ -31,7 +31,7 @@ services:
 
   # Dashboard UI (separate from CDN to avoid path conflicts)
   dashboard:
-    build: ./dashboard
+    build: ./frontend
     ports:
       - "8081:80"
     read_only: true

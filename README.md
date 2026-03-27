@@ -25,16 +25,16 @@
 
 ```bash
 # 複製環境設定範例
-cp .env.example .env
-cp settings.json.example settings.json
+cp backend/.env.example backend/.env
+cp backend/settings.json.example backend/settings.json
 
 # 啟動 CDN 服務與 Mock Origin Server
-docker-compose up --build
+docker compose up --build
 ```
 
 服務啟動後：
 - **CDN 代理**：`http://localhost:3000`
-- **Dashboard**：`http://localhost:3000/dashboard`
+- **Dashboard**：`http://localhost:8081`
 - **Mock Origin**：`http://localhost:8080`
 
 > `cache/`、`settings.json` 與 Redis 資料皆透過 volume 掛載，容器重啟後資料持久保留。Redis 預設啟用 RDB 快照（每 60 秒有變更時自動存檔）。容器檔案系統為 `read_only`，僅 `/tmp` 可寫入。
@@ -44,6 +44,8 @@ docker-compose up --build
 > **前置需求**：需要先啟動 Redis（預設連線 `redis://localhost:6379`），可透過 `docker run -d -p 6379:6379 redis:7-alpine` 快速啟動。
 
 ```bash
+cd backend
+
 # 安裝依賴
 npm install
 
@@ -129,6 +131,7 @@ Date.now() - entry.cachedAt > entry.ttl * 1000
 ## 測試
 
 ```bash
+cd backend
 npm test
 ```
 
@@ -162,30 +165,36 @@ curl -I http://localhost:3000/index.html
 
 ```
 cdnServer/
-├── src/
-│   ├── plugins/
-│   │   ├── cache-manager.js   # 快取核心：TTL、原子寫入、並行安全
-│   │   ├── config.js          # 環境變數集中管理
-│   │   ├── settings.js        # 動態設定（TTL、允許類型、路徑規則）
-│   │   ├── stats.js           # HIT/MISS 計數器
-│   │   └── static.js          # @fastify/static（serve Dashboard 靜態資源）
-│   ├── routes/
-│   │   ├── index.js           # GET /* — CDN 代理 wildcard
-│   │   ├── api/
-│   │   │   ├── cache/         # GET/DELETE /api/cache
-│   │   │   ├── settings/      # GET/PUT /api/settings
-│   │   │   └── stats/         # GET /api/stats
-│   │   └── dashboard/         # GET /dashboard
-│   ├── public/                # Dashboard 靜態資源
-│   ├── server.js              # buildServer() 工廠
-│   └── app.js                 # 進入點 + graceful shutdown
-├── cache/                     # 快取儲存（Docker volume）
-├── settings.json              # 動態設定檔（Docker volume）
-├── test/                      # node:test 測試套件
-├── docker/origin-files/       # Mock Origin 靜態檔案
-├── Dockerfile
-├── docker-compose.yml
-└── .env.example
+├── backend/                       # 後端（Fastify CDN 代理伺服器）
+│   ├── src/
+│   │   ├── plugins/
+│   │   │   ├── cache-manager.js   # 快取核心：TTL、原子寫入、並行安全
+│   │   │   ├── config.js          # 環境變數集中管理
+│   │   │   ├── settings.js        # 動態設定（TTL、允許類型、路徑規則）
+│   │   │   └── stats.js           # HIT/MISS 計數器
+│   │   ├── routes/
+│   │   │   ├── index.js           # GET /* — CDN 代理 wildcard
+│   │   │   └── api/
+│   │   │       ├── cache/         # GET/DELETE /api/cache
+│   │   │       ├── settings/      # GET/PUT /api/settings
+│   │   │       └── stats/         # GET /api/stats
+│   │   ├── server.js              # buildServer() 工廠
+│   │   └── app.js                 # 進入點 + graceful shutdown
+│   ├── test/                      # node:test 測試套件
+│   ├── cache/                     # 快取儲存（Docker volume）
+│   ├── settings.json              # 動態設定檔（Docker volume）
+│   ├── Dockerfile
+│   ├── package.json
+│   └── .env.example
+├── frontend/                      # 前端（Dashboard 監控面板）
+│   ├── public/
+│   │   ├── index.html             # Dashboard 頁面
+│   │   ├── app.js                 # Dashboard 邏輯
+│   │   └── style.css              # Dashboard 樣式
+│   ├── nginx.conf                 # Nginx 設定（反向代理 /api → 後端）
+│   └── Dockerfile
+├── docker/origin-files/           # Mock Origin 靜態檔案
+└── docker-compose.yml
 ```
 
 ## 開發挑戰
